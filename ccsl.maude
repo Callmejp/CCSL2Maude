@@ -1,0 +1,93 @@
+fmod CLOCK is
+  including QID .
+  including BOOL .
+  sorts Clock ClockSet .
+  subsort Qid < Clock < ClockSet .
+  op empty : -> Clock .
+  op _,_ : ClockSet ClockSet -> ClockSet [ctor assoc comm id: empty] .
+  op _in_ : Clock ClockSet -> Bool .
+  
+  vars C1 C2 : Clock .
+  var CS1 : ClockSet .
+  eq C1 in empty = false .
+  eq C1 in (C2, CS1) = 
+    if (C1 == C2) then true else C1 in CS1 fi .
+endfm 
+
+fmod TICK-LIST is 
+  sort TickList .
+  ops nil, i, t : -> TickList .
+  op _,_ : TickList TickList -> TickList [ctor assoc id: nil] .
+  op _,i : TickList -> TickList .
+  op _,t : TickList -> TickList .
+endfm
+
+fmod CONSTRAINTS is
+  including CLOCK .
+  including NAT .
+  sorts Constraint Constraints .
+  subsort Constraint < Constraints .
+  op empty : -> Constraints [ctor] .
+  op __ : Constraints Constraints -> Constraints [ctor assoc comm id: empty] .
+  op _<_     : Clock Clock       -> Constraint [ctor] .
+  op _!=_$_  : Clock Clock Nat   -> Constraint [ctor] .
+  op _!=_+_  : Clock Clock Clock -> Constraint [ctor] .
+  op _!=_*_  : Clock Clock Clock -> Constraint [ctor] .
+  op _!=_/\_ : Clock Clock Clock -> Constraint [ctor] .
+  op _!=_\/_ : Clock Clock Clock -> Constraint [ctor] .
+  op _<<_    : Clock Clock       -> Constraint [ctor] .
+  op _#_     : Clock Clock       -> Constraint [ctor] .
+  op _<=_    : Clock Clock       -> Constraint [ctor] .
+  op _!=_~_  : Clock Clock Clock -> Constraint [ctor] .
+endfm 
+
+fmod CONFIGURATION is 
+  including NAT + CLOCK + TICK-LIST . 
+  sort ConfElt Conf .
+  subsort ConfElt < Conf .
+  op [_,_,_] : Clock TickList Nat -> ConfElt [ctor] .
+  op empty : -> Conf [ctor] .
+  op _,_ : Conf Conf -> Conf [ctor assoc comm id: empty] .
+endfm
+
+mod MAIN is 
+  including BOOL .
+  including CLOCK .
+  including NAT .
+  including CONSTRAINTS .
+  including CONFIGURATION .
+  including TICK-LIST .
+  sort CCSLState .
+
+  op <_;_;_;_> : ClockSet Constraints Conf Nat -> CCSLState [ctor] .
+  op satisfy : ClockSet Conf Constraint -> Bool .
+
+  vars F F' : ClockSet .
+  var PHI : Constraints .
+  var X : Conf .
+  vars K N N1 N2 : Nat .
+  vars C1 C2 : Clock .
+  vars TL1 TL2 : TickList .
+  
+  --- Precedence
+  eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], X), C1 < C2) =
+    if N1 == N2 then not (C2 in F) else true fi .
+  --- Delay
+  eq satisfy(F, ([C2, TL2, N2], X), C1 != C2 $ N) = 
+    if N2 >= N then (C1 in F) == (C2 in F) else not (C1 in F) fi .
+
+  op update : Conf ClockSet -> Conf .
+  eq update(([C1, TL1, N1], X), F) = 
+    if (C1 in F) then [C1, (TL1, t), N1 + 1], update(X, F) else [C1, (TL1, i), N1], update(X, F) fi .
+  eq update(empty, F) = empty .
+
+  crl < (F, F') ; PHI ; X ; K > => < (F, F') ; PHI ; update(X, F) ; K + 1 >
+    if F =/= empty /\ satisfy(F, X, PHI) .
+
+endm
+
+
+
+
+
+
