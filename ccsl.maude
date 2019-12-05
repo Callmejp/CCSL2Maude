@@ -16,8 +16,7 @@ endfm
 
 fmod TICK-LIST is 
   sort TickList .
-  ops nil, i, t : -> TickList .
-  op _,_ : TickList TickList -> TickList [ctor assoc id: nil] .
+  ops nil : -> TickList .
   op _,i : TickList -> TickList .
   op _,t : TickList -> TickList .
 endfm
@@ -63,29 +62,34 @@ mod MAIN is
   op satisfy : ClockSet Conf Constraint -> Bool .
 
   vars F F' : ClockSet .
+  var CON : Constraint .
   var PHI : Constraints .
   var X : Conf .
+  var Y : ConfElt .
   vars K N N1 N2 : Nat .
   vars C1 C2 : Clock .
   vars TL1 TL2 : TickList .
   
+  --- General
+  eq satisfy(F, X, empty) = true .
   --- Precedence
   eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], X), C1 < C2) =
     if N1 == N2 then not (C2 in F) else true fi .
   --- Delay
   eq satisfy(F, ([C2, TL2, N2], X), C1 != C2 $ N) = 
-    if N2 >= N then (C1 in F) == (C2 in F) else not (C1 in F) fi .
-
+    if N2 >= N then (C1 in F) == (C2 in F) else not (C1 in F) fi . 
+  
+  eq satisfy(F, X, (CON PHI)) = if (satisfy(F, X, CON)) then satisfy(F, X, PHI) else false fi .
+  --- update here
   op update : Conf ClockSet -> Conf .
   eq update(([C1, TL1, N1], X), F) = 
-    if (C1 in F) then [C1, (TL1, t), N1 + 1], update(X, F) else [C1, (TL1, i), N1], update(X, F) fi .
+    if (C1 in F) then ([C1, (TL1, t), N1 + 1], update(X, F)) else ([C1, (TL1, i), N1], update(X, F)) fi .
   eq update(empty, F) = empty .
 
   crl < (F, F') ; PHI ; X ; K > => < (F, F') ; PHI ; update(X, F) ; K + 1 >
     if F =/= empty /\ satisfy(F, X, PHI) .
 
 endm
-
 
 
 
