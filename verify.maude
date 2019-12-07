@@ -9,8 +9,8 @@ fmod TICK-LIST is
   var TL1 : TickList .
 
   op get : TickList Int -> Int .
-  eq get((N1, TL1), 1) = N1 .
-  eq get((N2, TL1), N1) = get(TL1, N1 - 1) .
+  eq get((N2, TL1), N1) = 
+    if N1 == 1 then N2 else get(TL1, N1 - 1) fi .
 
   op cal : TickList Int -> Int .
   eq cal(TL1, 0) = 0 .
@@ -22,20 +22,15 @@ fmod CLOCK is
   including QID .
   including BOOL .
   including TICK-LIST .
-  sorts Clock ClockSet .
+  sorts Clock ClockEle ClockSet .
   subsort Qid < Clock .
+  subsort ClockEle < ClockSet .
+  
+  op [_,_] : Clock TickList -> ClockEle [ctor] .
   
   op empty : -> ClockSet .
-  op _,_ : Clock TickList -> ClockSet .
   op _,_ : ClockSet ClockSet -> ClockSet [ctor assoc comm id: empty] . 
 endfm 
-
-fmod TICK-LIST is 
-  sort TickList .
-  ops nil : -> TickList .
-  op _,i : TickList -> TickList .
-  op _,t : TickList -> TickList .
-endfm
 
 fmod CONSTRAINTS is
   including CLOCK .
@@ -55,3 +50,37 @@ fmod CONSTRAINTS is
   op _<=_    : Clock Clock       -> Constraint [ctor] .
   op _!=_~_  : Clock Clock Clock -> Constraint [ctor] .
 endfm 
+
+mod MAIN is 
+  including CLOCK .
+  including CONSTRAINTS .
+  including NAT .
+  including BOOL .
+  sort CCSLState .
+
+  op <_;_;_> : ClockSet Constraints Nat -> CCSLState .
+  
+
+  vars C1 C2 : Clock .
+  vars TL1 TL2 : TickList .
+  var CON1 : Constraint .
+  var PHI : Constraints .
+  var F : ClockSet .
+  vars K N1 : Nat .
+  
+  op satisfy : ClockSet Constraints Nat -> Bool .
+  eq satisfy(F, empty, K) = true .
+  --- precedence 
+  eq satisfy(([C1, TL1], [C2, TL2], F), C1 < C2 , K) = 
+    if get(TL2, K) == 1 then cal(TL1, K - 1) > cal(TL2, K - 1) else true fi .
+  --- delay 
+  eq satisfy(([C1, TL1], [C2, TL2], F), C1 != C2 $ N1, K) = 
+    if (cal(TL2, K - 1) - cal(TL1, K - 1)) >= N1 then get(TL1, K) == get(TL2, K) else get(TL1, K) == 0 fi . 
+
+  eq satisfy(F, (CON1 PHI), K) = if satisfy(F, CON1, K) then satisfy(F, PHI, K) else false fi .
+
+
+  crl < F ; PHI ; K > => < F ; PHI ; K + 1 >
+    if satisfy(F, PHI, K) .
+endm
+
