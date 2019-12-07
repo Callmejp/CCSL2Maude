@@ -1,0 +1,57 @@
+fmod TICK-LIST is 
+  including INT .
+  sort TickList .
+  subsort Int < TickList .
+  op nil : -> TickList .
+  op _,_ : Int TickList -> TickList [id: nil].
+
+  vars N1 N2 : Int .
+  var TL1 : TickList .
+
+  op get : TickList Int -> Int .
+  eq get((N1, TL1), 1) = N1 .
+  eq get((N2, TL1), N1) = get(TL1, N1 - 1) .
+
+  op cal : TickList Int -> Int .
+  eq cal(TL1, 0) = 0 .
+  eq cal((1, TL1), N1) = cal(TL1, N1 - 1) + 1 .
+  eq cal((0, TL1), N1) = cal(TL1, N1 - 1) .
+endfm
+
+fmod CLOCK is
+  including QID .
+  including BOOL .
+  including TICK-LIST .
+  sorts Clock ClockSet .
+  subsort Qid < Clock .
+  
+  op empty : -> ClockSet .
+  op _,_ : Clock TickList -> ClockSet .
+  op _,_ : ClockSet ClockSet -> ClockSet [ctor assoc comm id: empty] . 
+endfm 
+
+fmod TICK-LIST is 
+  sort TickList .
+  ops nil : -> TickList .
+  op _,i : TickList -> TickList .
+  op _,t : TickList -> TickList .
+endfm
+
+fmod CONSTRAINTS is
+  including CLOCK .
+  including NAT .
+  sorts Constraint Constraints .
+  subsort Constraint < Constraints .
+  op empty : -> Constraints [ctor] .
+  op __ : Constraints Constraints -> Constraints [ctor assoc comm id: empty] .
+  op _<_     : Clock Clock       -> Constraint [ctor] .
+  op _!=_$_  : Clock Clock Nat   -> Constraint [ctor] .
+  op _!=_+_  : Clock Clock Clock -> Constraint [ctor] .
+  op _!=_*_  : Clock Clock Clock -> Constraint [ctor] .
+  op _!=_/\_ : Clock Clock Clock -> Constraint [ctor] .
+  op _!=_\/_ : Clock Clock Clock -> Constraint [ctor] .
+  op _<<_    : Clock Clock       -> Constraint [ctor] .
+  op _#_     : Clock Clock       -> Constraint [ctor] .
+  op _<=_    : Clock Clock       -> Constraint [ctor] .
+  op _!=_~_  : Clock Clock Clock -> Constraint [ctor] .
+endfm 
