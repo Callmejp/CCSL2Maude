@@ -108,8 +108,12 @@ mod MAIN is
   --- Exclusion
   eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], X), C1 # C2) =
     if not (C1 in F) or not (C2 in F) then true else false fi .
-  
-
+  --- Causality
+  eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], X), C1 <= C2 ) =
+    if (N1 >N2) then true else 
+     if (N1 ==  N2) then (not (C2 in F) or ((C1 in F) and (C2 in F))) else true 
+     fi)
+    fi) . 
   eq satisfy(F, X, (CON PHI)) = if (satisfy(F, X, CON)) then satisfy(F, X, PHI) else false fi .
   --- update here
   op update : Conf ClockSet -> Conf .
