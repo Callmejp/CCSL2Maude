@@ -37,7 +37,7 @@ fmod CONSTRAINTS is
   op _<<_    : Clock Clock       -> Constraint [ctor] .
   op _#_     : Clock Clock       -> Constraint [ctor] .
   op _<=_    : Clock Clock       -> Constraint [ctor] .
-  op _!=_~_  : Clock Clock Clock -> Constraint [ctor] .
+  op _!=_~_  : Clock Clock Nat -> Constraint [ctor] .
 endfm 
 
 fmod CONFIGURATION is 
@@ -66,9 +66,9 @@ mod MAIN is
   var PHI : Constraints .
   var X : Conf .
   var Y : ConfElt .
-  vars K N N1 N2 : Nat .
-  vars C1 C2 : Clock .
-  vars TL1 TL2 : TickList .
+  vars K N N1 N2 N3 : Nat .
+  vars C1 C2 C3 : Clock .
+  vars TL1 TL2 TL3 : TickList .
   
   --- General
   eq satisfy(F, X, empty) = true .
@@ -78,7 +78,38 @@ mod MAIN is
   --- Delay
   eq satisfy(F, ([C2, TL2, N2], X), C1 != C2 $ N) = 
     if N2 >= N then (C1 in F) == (C2 in F) else not (C1 in F) fi . 
+  --- Periodicity
+  eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], X), C1 != C2 ~ N) =
+    if (N2 + 1) rem N == 0 then (C1 in F == C2 in F) else not (C1 in F) fi .
+  --- Intersection
+  eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], [C3, TL3, N3], X), C1 != C2 * C3) = 
+    if not (C1 in F) or ((C2 in F) or (C3 in F)) then true else false fi .
+  --- Union 
+  eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], [C3, TL3, N3], X), C1 != C2 + C3) = 
+    if not (C1 in F) or (C2 in F) or (C3 in F) then true else false fi .
+
+  --- Supremum
+  eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], [C3, TL3, N3], X), C1 != C2 \/ C3) = 
+    (if N2 < N3 then (C1 in F) == (C2 in F) else
+        (if N2 > N3 then (C1 in F) == (C3 in F) else 
+                (C1 in F) == (C2 in F and C3 in F)
+        fi) 
+    fi) .
+  --- Infimum
+  eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], [C3, TL3, N3], X), C1 != C2 /\ C3) = 
+    (if N2 > N3 then (C1 in F) == (C2 in F) else
+        (if N2 < N3 then (C1 in F) == (C3 in F) else 
+            (C1 in F) == (C2 in F or C3 in F)
+        fi) 
+    fi) .
+  --- Subclock
+  eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], X), C1 << C2) = 
+    if not (C1 in F) or (C2 in F) then true else false fi .
+  --- Exclusion
+  eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], X), C1 # C2) =
+    if not (C1 in F) or not (C2 in F) then true else false fi .
   
+
   eq satisfy(F, X, (CON PHI)) = if (satisfy(F, X, CON)) then satisfy(F, X, PHI) else false fi .
   --- update here
   op update : Conf ClockSet -> Conf .
@@ -90,8 +121,3 @@ mod MAIN is
     if F =/= empty /\ satisfy(F, X, PHI) .
 
 endm
-
-
-
-
-
