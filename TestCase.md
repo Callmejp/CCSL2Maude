@@ -10,50 +10,50 @@
 
 `Order`: search [1, 10] < ('c1, 'c2) ; ('c1 != 'c2 ~ 3) ; ['c1,nil,0],['c2,nil,0] ; 0 > =>* < CS:ClockSet ; CTS:Constraints ; X:Conf ; 6 > .
 
-`Expected Result`: ![Case1](Images/CCSL_Periodicity.JPG)
+`Expected Result`: ![Case2](Images/CCSL_Periodicity.JPG)
 
 
 ### Case 3(Intersection):
 
 `Order`: search [2, 10] < ('c1, 'c2, 'c3) ; ('c1 != 'c2 * 'c3) ; ['c1,nil,0],['c2,nil,0],['c3,nil,0] ; 0 > =>* < CS:ClockSet ; CTS:Constraints ; X:Conf ; 6 > .
 
-`Expected Result`: ![Case1](Images/CCSL_Intersection.JPG)
+`Expected Result`: ![Case3](Images/CCSL_Intersection.JPG)
 
 ### Case 4(Union):
 
 `Order`: search [2, 10] < ('c1, 'c2, 'c3) ; ('c1 != 'c2 + 'c3) ; ['c1,nil,0],['c2,nil,0],['c3,nil,0] ; 0 > =>* < CS:ClockSet ; CTS:Constraints ; X:Conf ; 6 > .
 
-`Expected Result`: ![Case1](Images/CCSL_Union.JPG)
+`Expected Result`: ![Case4](Images/CCSL_Union.JPG)
 
 ### Case 5(Infimum):
 
 `Order`: search [2, 10] < ('c1, 'c2, 'c3) ; ('c1 != 'c2 /\ 'c3) ; ['c1,nil,0],['c2,nil,0],['c3,nil,0] ; 0 > =>* < CS:ClockSet ; CTS:Constraints ; X:Conf ; 6 > .
 
-`Expected Result`: ![Case1](Images/CCSL_Infimum.JPG)
+`Expected Result`: ![Case5](Images/CCSL_Infimum.JPG)
 
 ### Case 6(Supremum):
 
 `Order`: search [2, 10] < ('c1, 'c2, 'c3) ; ('c1 != 'c2 \/ 'c3) ; ['c1,nil,0],['c2,nil,0],['c3,nil,0] ; 0 > =>* < CS:ClockSet ; CTS:Constraints ; X:Conf ; 6 > .
 
-`Expected Result`: ![Case1](Images/CCSL_Supremum.JPG)
+`Expected Result`: ![Case6](Images/CCSL_Supremum.JPG)
 
 ### Case 7(Subclock):
 
 `Order`: search [2, 10] < ('c1, 'c2) ; ('c1 << 'c2) ; ['c1,nil,0],['c2,nil,0] ; 0 > =>* < CS:ClockSet ; CTS:Constraints ; X:Conf ; 6 > .
 
-`Expected Result`: ![Case1](Images/CCSL_Subclock.JPG)
+`Expected Result`: ![Case7](Images/CCSL_Subclock.JPG)
 
 ### Case 8(Exclusion):
 
 `Order`: search [2, 10] < ('c1, 'c2) ; ('c1 # 'c2) ; ['c1,nil,0],['c2,nil,0] ; 0 > =>* < CS:ClockSet ; CTS:Constraints ; X:Conf ; 6 > .
 
-`Expected Result`: ![Case1](Images/CCSL_Exclusion.JPG)
+`Expected Result`: ![Case8](Images/CCSL_Exclusion.JPG)
 
 ### Case 9(Causality):
 
 `Order`: search [2, 10] < ('c1, 'c2) ; ('c1 <= 'c2) ; ['c1,nil,0],['c2,nil,0] ; 0 > =>* < CS:ClockSet ; CTS:Constraints ; X:Conf ; 6 > .
 
-`Expected Result`: ![Case1](Images/CCSL_Causality.JPG)
+`Expected Result`: ![Case9](Images/CCSL_Causality.JPG)
 ---
 
 ## TestCase For verify.maude
