@@ -58,8 +58,34 @@
 
 ## TestCase For verify.maude
 
-### Case 1:
+### Case 1(Precedence and Delay):
    
 `Order`: search [,35] < (['c1, (1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0)], ['c2, (0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1)], ['c3, (0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0)]) ; ('c1 < 'c2) ('c2 < 'c3) ('c3 != 'c1 $ 1) ; 1 > =>* < CS:ClockSet ; CON:Constraints ; 21 > .
 
 `Expected Result`: ![Case1](Images/VERIFY_1.JPG)
+
+### Case 2(Periodicity):
+
+`Order`: search [,10] < (['c1, (1, 0, 1, 1, 1)], ['c2, (0, 0, 1, 0, 1)]) ; ('c2 != 'c1 ~ 2) ; 1 > =>* < CS:ClockSet ; CON:Constraints ; 6 > .
+
+`Expected Result`: `1 Solution`
+
+### Case 3(Intersection and Union):
+
+`Order`: search [,10] < (['c1, (1, 0, 1, 1, 1)], ['c2, (0, 0, 1, 0, 1)], ['c3, (0, 0, 1, 0, 1)], ['c4, (1, 0, 1, 1, 1)]) ; ('c3 != 'c1 * 'c2) ('c4 != 'c1 + 'c2) ; 1 > =>* < CS:ClockSet ; CON:Constraints ; 6 > .
+
+`Expected Result`: `1 Solution`
+
+### Case 4(Infimum and Supremum):
+
+`Order`: search [,10] < (['c1, (1, 0, 1, 1, 1)], ['c2, (0, 0, 1, 0, 1)], ['c3, (1, 0, 1, 1, 1)], ['c4, (0, 0, 1, 0, 1)]) ; ('c3 != 'c1 /\ 'c2) ('c4 != 'c1 \/ 'c2) ; 1 > =>* < CS:ClockSet ; CON:Constraints ; 6 > .
+
+`Expected Result`: `1 Solution`
+
+
+### Case 5(Subclock and Exclusion and Causality):
+
+`Order`: search [,10] < (['c1, (1, 0, 0, 1, 0)], ['c2, (0, 0, 1, 0, 1)], ['c3, (1, 1, 1, 1, 1)], ['c4, (1, 0, 0, 1, 0)]) ; ('c1 # 'c2) ('c1 << 'c3) ('c4 <= 'c2); 1 > =>* < CS:ClockSet ; CON:Constraints ; 6 > .
+
+`Expected Result`: `1 Solution`
+

@@ -48,7 +48,7 @@ fmod CONSTRAINTS is
   op _<<_    : Clock Clock       -> Constraint [ctor] .
   op _#_     : Clock Clock       -> Constraint [ctor] .
   op _<=_    : Clock Clock       -> Constraint [ctor] .
-  op _!=_~_  : Clock Clock Clock -> Constraint [ctor] .
+  op _!=_~_  : Clock Clock Nat   -> Constraint [ctor] .
 endfm 
 
 mod MAIN is 
@@ -61,8 +61,8 @@ mod MAIN is
   op <_;_;_> : ClockSet Constraints Nat -> CCSLState .
   
 
-  vars C1 C2 : Clock .
-  vars TL1 TL2 : TickList .
+  vars C1 C2 C3 : Clock .
+  vars TL1 TL2 TL3 : TickList .
   var CON1 : Constraint .
   var PHI : Constraints .
   var F : ClockSet .
@@ -70,6 +70,7 @@ mod MAIN is
   
   op satisfy : ClockSet Constraints Nat -> Bool .
   eq satisfy(F, empty, K) = true .
+  
   --- precedence 
   eq satisfy(([C1, TL1], [C2, TL2], F), C1 < C2 , K) = 
     if get(TL2, K) == 1 then cal(TL1, K - 1) > cal(TL2, K - 1) else true fi .
@@ -77,8 +78,39 @@ mod MAIN is
   eq satisfy(([C1, TL1], [C2, TL2], F), C1 != C2 $ N1, K) = 
     if (cal(TL2, K - 1) - cal(TL1, K - 1)) >= N1 then get(TL1, K) == get(TL2, K) else get(TL1, K) == 0 fi . 
 
-  eq satisfy(F, (CON1 PHI), K) = if satisfy(F, CON1, K) then satisfy(F, PHI, K) else false fi .
+  --- Periodicity
+  eq satisfy(([C1, TL1], [C2, TL2], F), C1 != C2 ~ N1, K) =  
+    if ((cal(TL2, K - 1) + 1) rem N1 == 0) then (get(TL1, K) == get(TL2, K))    else get(TL1, K) == 0 fi .
 
+  --- Intersection
+  eq satisfy(([C1, TL1], [C2, TL2], [C3, TL3], F), C3 != C2 * C1, K) =
+    if get(TL3, K) == 1 then (get(TL1, K) == 1 and get(TL2, K) == 1) else (not (get(TL1, K) == 1 and get(TL2, K) == 2)) fi .
+
+  --- Union
+  eq satisfy(([C1, TL1], [C2, TL2], [C3, TL3], F), C3 != C2 + C1, K) =
+    if get(TL3, K) == 1 then (get(TL1, K) == 1 or get(TL2, K) == 1) else (not (get(TL1, K) == 1 or get(TL2, K) == 2)) fi .
+
+  --- Infimum
+  eq satisfy(([C1, TL1], [C2, TL2], [C3, TL3], F), C3 != C2 /\ C1, K) = 
+    if cal(TL2, K) >= cal(TL1, K) then cal(TL2, K) == cal(TL3, K) else cal(TL1, K) == cal(TL3, K) fi .
+
+  --- Supremum
+  eq satisfy(([C1, TL1], [C2, TL2], [C3, TL3], F), C3 != C2 \/ C1, K) = 
+    if cal(TL2, K) <= cal(TL1, K) then cal(TL2, K) == cal(TL3, K) else cal(TL1, K) == cal(TL3, K) fi .
+
+  --- Subclock
+  eq satisfy(([C1, TL1], [C2, TL2], F), C1 << C2, K) =
+    if get(TL1, K) == 1 then get(TL2, K) == 1 else true fi .
+
+  --- Exclusion
+  eq satisfy(([C1, TL1], [C2, TL2], F), C1 # C2, K) =
+    if get(TL1, K) == 1 and get(TL2, K) == 1 then false else true fi .
+
+  --- Casuality 
+  eq satisfy(([C1, TL1], [C2, TL2], F), C1 <= C2, K) = 
+    if (cal(TL1, K - 1) > cal(TL2, K - 1)) or (cal(TL1, K - 1) == cal(TL2, K - 1) and get(TL2, K) == 0) then true else false fi .
+	
+  eq satisfy(F, (CON1 PHI), K) = if satisfy(F, CON1, K) then satisfy(F, PHI, K) else false fi .
 
   crl < F ; PHI ; K > => < F ; PHI ; K + 1 >
     if satisfy(F, PHI, K) .
