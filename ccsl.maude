@@ -14,12 +14,21 @@ fmod CLOCK is
     if (C1 == C2) then true else C1 in CS1 fi .
 endfm 
 
+***(
+fmod TICK-LIST is 
+  sort TickList .
+  ops nil : -> TickList .
+  op _,i : TickList -> TickList .
+  op _,t : TickList -> TickList .
+endfm
+)
 fmod TICK-LIST is 
   including INT .
   sort TickList .
   subsort Int < TickList .
   op nil : -> TickList .
-  op _,_ : Int TickList -> TickList [id: nil].
+  op _,_ : TickList TickList -> TickList [id: nil assoc] .
+
 
   vars N1 N2 : Int .
   var TL1 : TickList .
@@ -27,12 +36,14 @@ fmod TICK-LIST is
   op get : TickList Int -> Int .
   eq get((N2, TL1), N1) = 
     if N1 == 1 then N2 else get(TL1, N1 - 1) fi .
-
+    
   op cal : TickList Int -> Int .
   eq cal(TL1, 0) = 0 .
   eq cal((1, TL1), N1) = cal(TL1, N1 - 1) + 1 .
   eq cal((0, TL1), N1) = cal(TL1, N1 - 1) .
+
 endfm
+  
 
 fmod CONSTRAINTS is
   including CLOCK .
@@ -77,7 +88,7 @@ mod MAIN is
   vars F F' : ClockSet .
   var CON : Constraint .
   var PHI : Constraints .
-  var X : Conf .
+  vars X X' : Conf .
   var Y : ConfElt .
   vars K N N1 N2 N3 K' : Nat .
   vars C1 C2 C3 : Clock .
@@ -153,12 +164,13 @@ mod MAIN is
   op isPeriodic : Conf Constraints Nat Nat -> Bool .
   eq getPeriod(X, PHI, K, K') =
     if K > 0 then (if isPeriodic(X, PHI, K, K') then sd(K', K) else getPeriod(X, PHI, sd(K, 1), K') fi)
-	else 0 fi .
+    else 0 fi .
+
+  eq isPeriodic(X, empty, K, K') = true .
 
   eq isPeriodic(([C1, TL1, N1], [C2, TL2, N2], X), (C1 < C2) PHI, K, K') = 
     get(TL1, K) == get(TL1, K') and
-	get(TL2, K) == get(TL2, K') and
-	sd(N1, cal(TL1, K)) >= sd(N2, cal(TL2, K)) and
-	isPeriodic(X, PHI, K, K') .
-
+    get(TL2, K) == get(TL2, K') and
+    sd(N1, cal(TL1, K)) >= sd(N2, cal(TL2, K)) and
+    isPeriodic(X, PHI, K, K') .
 endm
