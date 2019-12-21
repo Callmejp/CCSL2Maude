@@ -71,6 +71,22 @@ fmod CONFIGURATION is
   op [_,_,_] : Clock TickList Nat -> ConfElt [ctor] .
   op empty : -> Conf [ctor] .
   op _,_ : Conf Conf -> Conf [ctor assoc comm id: empty] .
+  
+  var X : Conf .
+  vars K N1 : Nat .
+  var Y : ConfElt .
+  var C1 : Clock .
+  var TL1 : TickList .
+  
+  op rb : ConfElt Nat -> ConfElt .
+  eq rb([C1, TL1, N1], 0) = [C1, TL1, N1] .
+  eq rb([C1, (TL1, 1), N1], K) = rb([C1, TL1, N1 - 1], K - 1) .
+  eq rb([C1, (TL1, 0), N1], K) = rb([C1, TL1, N1], K - 1) .
+
+  op rollback : Conf Nat -> Conf .
+  eq rollback(empty, K) = empty .
+  eq rollback((Y, X), K) = rb(Y, K), rollback(X, K) . 
+
 endfm
 
 mod MAIN is 
@@ -93,6 +109,7 @@ mod MAIN is
   vars K N N1 N2 N3 K' : Nat .
   vars C1 C2 C3 : Clock .
   vars TL1 TL2 TL3 : TickList .
+  var P : NzNat .
   
   --- General
   eq satisfy(F, X, empty) = true .
@@ -144,7 +161,7 @@ mod MAIN is
   --- Causality
   eq satisfy(F, ([C1, TL1, N1], [C2, TL2, N2], X), C1 <= C2 ) =
     (if (N1 > N2) then true else 
-     (if (N1 ==  N2) then ((C2 in F) and (not (C1 in F))) else true 
+     (if (N1 ==  N2) then not ((C2 in F) and (not (C1 in F))) else false 
      fi)
     fi) . 
   
@@ -156,8 +173,6 @@ mod MAIN is
     if (C1 in F) then ([C1, (TL1, 1), N1 + 1], update(X, F)) else ([C1, (TL1, 0), N1], update(X, F)) fi .
   eq update(empty, F) = empty .
 
-  crl < (F, F') ; PHI ; X ; K > => < (F, F') ; PHI ; update(X, F) ; K + 1 >
-    if F =/= empty /\ satisfy(F, X, PHI) .
 
   --- Declaration and definition of getPeriod and isPeriodic
   op getPeriod  : Conf Constraints Nat Nat -> Nat .
@@ -172,5 +187,50 @@ mod MAIN is
     get(TL1, K) == get(TL1, K') and
     get(TL2, K) == get(TL2, K') and
     sd(N1, cal(TL1, K)) >= sd(N2, cal(TL2, K)) and
-    isPeriodic(X, PHI, K, K') .
+    isPeriodic(([C1, TL1, N1], [C2, TL2, N2], X), PHI, K, K') .
+  
+  eq isPeriodic(([C1, TL1, N1], [C2, TL2, N2], X), (C1 != C2 $ N) PHI, K, K') = 
+    get(TL1, K) == get(TL1, K') and
+    get(TL2, K) == get(TL2, K') and
+    sd(N1, cal(TL1, K)) == sd(N2, cal(TL2, K)) and
+	cal(TL2, K)  >= N and
+    isPeriodic(([C1, TL1, N1], [C2, TL2, N2], X), PHI, K, K') .
+***(
+  crl [next] < (F, F') ; PHI ; X ; K > => < (F, F') ; PHI ; update(X, F) ; K + 1 >
+    if F =/= empty /\ satisfy(F, X, PHI) .
+)
+
+  crl [next] : < (F, F') ; PHI ; X ; K > => < (F, F'); PHI ; X' ; K + 1 >
+    if F =/= empty /\
+	   satisfy(F, X, PHI) /\
+	   X' := update(X, F) /\
+	   getPeriod(X', PHI, K, K + 1) == 0 .
+
+  crl [periodic] : < (F, F') ; PHI ; X ; K > => < (F, F') ; PHI ; rollback(X', P) ; sd(K + 1, P) >
+    if F =/= empty /\
+	   satisfy(F, X, PHI) /\
+	   X' := update(X, F) /\
+	   P := getPeriod(X', PHI, K, K + 1) .
+endm
+
+
+mod LTL-TEST is
+  protecting MAIN .
+  including SATISFACTION .
+  including LTL-SIMPLIFIER .
+  including MODEL-CHECKER .
+
+  subsort CCSLState < State .
+  
+  var TL : TickList .
+  vars N K : Nat .
+  var F : ClockSet .
+  var PHI : Constraints .
+  var C : Clock .
+  var X : Conf .
+
+  op tick : Clock -> Prop .
+  eq < F ; PHI ; ([C, (TL, 1), N], X) ; K > |= tick(C) = true .
+  eq S:CCSLState |= P:Prop = false [owise] .
+
 endm
