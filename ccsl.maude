@@ -4,13 +4,13 @@ fmod CLOCK is
   sorts Clock ClockSet .
   subsort Qid < Clock < ClockSet .
   op empty : -> Clock .
-  op _,_ : ClockSet ClockSet -> ClockSet [ctor assoc comm id: empty] .
+  op _|_ : ClockSet ClockSet -> ClockSet [ctor assoc comm id: empty] .
   op _in_ : Clock ClockSet -> Bool .
   
   vars C1 C2 : Clock .
   var CS1 : ClockSet .
   eq C1 in empty = false .
-  eq C1 in (C2, CS1) = 
+  eq C1 in (C2 | CS1) = 
     if (C1 == C2) then true else C1 in CS1 fi .
 endfm 
 
@@ -41,6 +41,10 @@ fmod TICK-LIST is
   eq cal(TL1, 0) = 0 .
   eq cal((1, TL1), N1) = cal(TL1, N1 - 1) + 1 .
   eq cal((0, TL1), N1) = cal(TL1, N1 - 1) .
+
+  op lastIsIdle : TickList -> Bool .
+  eq lastIsIdle(nil) = true .
+  eq lastIsIdle(TL1, N1) = if N1 == 0 then true else false fi .
 
 endfm
   
@@ -196,24 +200,24 @@ mod MAIN is
 	cal(TL2, K)  >= N and
     isPeriodic(([C1, TL1, N1], [C2, TL2, N2], X), PHI, K, K') .
 ***(
-  crl [next] < (F, F') ; PHI ; X ; K > => < (F, F') ; PHI ; update(X, F) ; K + 1 >
+  crl [next] < (F | F') ; PHI ; X ; K > => < (F | F') ; PHI ; update(X, F) ; K + 1 >
     if F =/= empty /\ satisfy(F, X, PHI) .
 )
 
-  crl [next] : < (F, F') ; PHI ; X ; K > => < (F, F'); PHI ; X' ; K + 1 >
+  crl [next] : < (F | F') ; PHI ; X ; K > => < (F | F'); PHI ; X' ; K + 1 >
     if F =/= empty /\
 	   satisfy(F, X, PHI) /\
 	   X' := update(X, F) /\
 	   getPeriod(X', PHI, K, K + 1) == 0 .
 
-  crl [periodic] : < (F, F') ; PHI ; X ; K > => < (F, F') ; PHI ; rollback(X', P) ; sd(K + 1, P) >
+  crl [periodic] : < (F | F') ; PHI ; X ; K > => < (F | F') ; PHI ; rollback(X', P) ; sd(K + 1, P) >
     if F =/= empty /\
 	   satisfy(F, X, PHI) /\
 	   X' := update(X, F) /\
 	   P := getPeriod(X', PHI, K, K + 1) .
 endm
 
-
+***(
 mod LTL-TEST is
   protecting MAIN .
   including SATISFACTION .
@@ -233,4 +237,62 @@ mod LTL-TEST is
   eq < F ; PHI ; ([C, (TL, 1), N], X) ; K > |= tick(C) = true .
   eq S:CCSLState |= P:Prop = false [owise] .
 
+endm
+)
+
+
+mod CCSL-SEMANTIC is
+  protecting MAIN .
+  protecting META-LEVEL .
+
+  sort Policy .
+  sort CCSLState4Sim .
+  sort ConfSet .
+  subsort Conf < ConfSet .
+  op empty : -> Conf [ctor] .
+  op _|_ : ConfSet ConfSet -> ConfSet [ctor id: empty] .
+
+  ops rand max min : -> Policy .
+  ops lazy active : ClockSet -> Policy .
+  op mix : ClockSet ClockSet -> Policy .
+  op [_,_] : CCSLState Policy -> CCSLState4Sim .
+
+  op getAllSuccessors : CCSLState Nat    -> ConfSet .
+  op getConfByPol :     ConfSet   Policy -> Conf .
+  --- all for getNonTickConf (wdnmd)
+  op getNonTickConf : ConfSet Clock -> ConfSet .
+  op existNonTick : ConfSet Clock -> Bool .
+  op pick : ConfSet Clock -> ConfSet .
+  op getLastIdle : Conf Clock -> Bool .
+
+
+  var P : Policy .
+  vars N K : Nat .
+  vars F CS : ClockSet .
+  vars C C1 : Clock .
+  var PHI : Constraints .
+  vars X X' : Conf .
+  var CF : ConfSet .
+  var TL1 : TickList .
+
+  --- all for getNonTickConf (WDNMD)
+  eq getLastIdle(([C1, TL1, N], X), C1) = lastIsIdle(TL1) .
+  
+  eq existNonTick(empty, C) = false .
+  eq existNonTick((X | CF), C) = if getLastIdle(X, C) then true else existNonTick(CF, C) fi .
+  
+  eq pick(empty, C) = empty .
+  eq pick((X | CF), C) = if getLastIdle(X, C) then X | pick(CF, C) else pick(CF, C) fi .
+
+  eq getNonTickConf(CF, C) = if existNonTick(CF, C) then pick(CF, C) else CF fi .
+
+  --- rules...
+  crl [next] : [ < F ; PHI ; X ; K >, P ] => [ < F ; PHI ; X' ; K + 1 >, P ]
+    if X' := getConfByPol(getAllSuccessors(< F ; PHI ; X ; K >, 0), P) .
+
+  ceq getAllSuccessors(< F ; PHI ; X ; K >, N) = downTerm(T, nil) | getAllSuccessors(< F ; PHI ; X ; K >, N + 1) 
+    if RT := metaSearch(upModule('MAIN, false), upTerm(< F ; PHI ; X ; K >), '<_;_;_;_>[upTerm(F), upTerm(PHI), 'X':Conf, upTerm(M + 1)], nil, '+, 1, N) /\ ('X':Conf <- T) := getSubstitution(RT) .
+
+  eq getConfByPol(CF, lazy(empty)) = CF .
+  eq getConfByPol(CF, lazy(C | CS)) = getConfByPol(getNonTickConf(CF, C), lazy(CS)) .
 endm
